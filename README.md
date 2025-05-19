@@ -27,18 +27,24 @@ Click `run.bat`
 
 You can also configure tasks in `run_setting.txt` before running.
 
-The `base` style entry **must be retained and defined**. Other styles can be added, modified, or deleted freely, but all style keywords must be in English.
+## 🧰 Style Configuration Example
+
+All style keywords **must be in English**:
 
 ```
-For example:
-
-base:professional 3d model
-pixar:pixar animation
-
-Can be changed to:
-base:Ink Wash Painting
-qibaishi:Qi Baishi
+makefile复制编辑base:professional 3d model  
+pixar:pixar animation  
+dream:dreamWorks  
 ```
+
+You can customize them like this:
+
+```
+makefile复制编辑base:Ink Wash Painting  
+qibaishi:Qi Baishi  
+```
+
+The `base` entry is **mandatory** and must be defined.
 
 ------
 
@@ -133,3 +139,10 @@ config.renew.videos = True
 
 task = StoryTask(None, config)
 ```
+
+------
+
+## 📜 Open Source License
+
+We recommend using the MIT License for this project.
+ You may also choose other licenses according to your needs, such as Apache-2.0 or GPL-3.0.
