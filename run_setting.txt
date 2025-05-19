@@ -1,0 +1,70 @@
+# --------------- Task Setting 任务设置 ---------------
+# If you want to run a historical task from the 'outputs' folder like "2025-05-14/195926"
+# 如果你希望运行 outputs 文件夹中的历史任务，如 "2025-05-14/195926"
+# If no task info is provided, a new task will be created.
+# 如果未提供任务信息，则会新建任务
+
+#task:test
+#task:2025-05-14/195926
+
+# If set to "yes", the following data will be regenerated (cache cleared).
+# 如果设为 yes，将重新生成下列项目（会清除缓存）
+
+renewShots: no
+renewAudios: no
+renewRoles: no
+renewimages: no
+renewvideos: no
+renewAfters: yes
+
+# Specify shot indices to regenerate only those specific shots (comma-separated).
+# 指定要重新生成的镜头索引（用英文逗号分隔）
+# Example 示例: renewShotByIndex: 0,1,2
+
+renewShotByIndex:
+
+# --------------- End of Task Setting 任务设置结束 ---------------
+
+
+# --------------- Style Setting 风格设置 ---------------
+#base is necessary base必须保有，其他词条随意增删改
+
+base:Ink Wash Painting 
+render:octane render,highly detailed
+Qbaishi:Qi Baishi
+painting:Chinese painting
+
+
+style end
+
+#--------------- End of Style Setting ---------------
+
+
+# --------------- Script Setting 剧本设置 ---------------
+
+lang: 中文          
+scene: 中国水墨画故事  
+action: 现在有一个一分钟左右的短视频大纲需求
+
+# --------------- End of Script Setting ---------------
+
+
+# --------------- Backend Setting 后端设置 ---------------
+ChatBackend: OllamaEngine
+# Specify chat backend 指定聊天后端（默认 Ollama）
+
+ImageBackend: FluxEngine
+# Specify image backend 图像生成后端（默认 Flux）
+
+VideoBackend: FramePackEngine
+# Specify video backend 视频生成后端（默认 FramePack）
+
+AudioBackend: FishSpeechEngine
+# Specify audio backend 音频生成后端（默认 FishSpeech）
+
+AffterEffectPlugs: Subtitle,VideoScaler
+
+# Optional After Effects plugins 可选后期插件
+# Available options 可选项: Subtitle, VideoScaler
+
+# --------------- End of Backend Setting 后端设置结束 ---------------
