@@ -48,7 +48,7 @@ action: 中国古代武侠江湖中小胖猫的故事
 
 
 # --------------- Backend Setting 后端设置 ---------------
-ChatBackend: GeminiEngine
+ChatBackend: OllamaEngine
 # Specify chat backend 指定聊天后端（默认 Ollama）
 
 ImageBackend: FluxEngine
