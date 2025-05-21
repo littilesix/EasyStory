@@ -39,7 +39,9 @@ if exist "%pip%" (
     :: 修改 _pth 文件，使嵌入式 Python 能使用 site-packages（Enable site-packages）
     echo import site>>env/python310._pth
     echo ../modules>>env/python310._pth
-    echo ../modules\lora\sd-scripts>>env/python310._pth
+    echo ../modules/lora/sd-scripts>>env/python310._pth
+    echo ../installer>>env/python310._pth
+    echo ../scripts>>env/python310._pth
 )
 
 :: 设置环境变量 PATH（Temporarily add Python to path）
@@ -142,7 +144,7 @@ echo [SUCCESS] all easyStory packages is ready
 echo ===========================
 echo.
 :: 下载模型（Download pre-trained models）
-python installer/get-models.py
+python installer/get_models.py
 if %errorlevel% neq 0 (
     echo something exception happened
     pause

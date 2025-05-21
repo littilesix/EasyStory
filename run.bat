@@ -8,6 +8,6 @@ cd /d %workPath%
 :: Update PATH 
 set PATH=%workPath%/env;%workPath%/env/Scripts;%PATH%
 
-python modules/StoryTask.py
+python scripts/run.py
 
 cmd

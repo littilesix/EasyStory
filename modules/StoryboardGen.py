@@ -15,38 +15,35 @@ logger.setLevel(logging.INFO)
 #model="qwen3:30b-a3b-q4_K_M"
 class StoryBoardGener:
     def __init__(
-            self,
-            task: str = None, 
-            refresh_shot: bool = False, 
-            refresh_list=None, 
-            backend=None,
-            style=Pro3DModel
-            ):
+        self,
+        task: str = None, 
+        refresh_shot: bool = False, 
+        refresh_list=None, 
+        backend=None,
+        style=Pro3DModel
+    ):
 
         self.isOk = False
-        self.cache_mode = False
         self.backend = backend if backend else ChatBackend(OllamaEngine())
         self.refresh_list = refresh_list or []
         self.refresh_shot = refresh_shot
         self.style = style
+        if self.refresh_list:
+            self.refresh_shot = True
 
-        # Step 1: 判断是否使用缓存模式
         if task and os.path.exists(f"./outputs/{task}") and os.path.exists(f"./outputs/{task}/StoryBoard.json"):
             self.cache_mode = True
+        else:
+            self.cache_mode = False
 
-        # Step 2: 后端注册逻辑
+        self.data = self._load_or_create_data(task)
+
         if not self.cache_mode or self.refresh_shot:
             self.backend.register()
             if not self.backend.isOpened:
                 self.backend.close()
-                raise ChildProcessError("text init fail,shut down the proxy or change backend model name")
+                raise ChildProcessError("ChatBackend init fail")
 
-        # Step 3: 加载或创建数据对象
-        self.data = self._load_or_create_data(task)
-
-        #os.makedirs(self.data.cache_dir, exist_ok=True)
-
-        # Step 4: 刷新镜头
         if self.refresh_shot:
             self._refresh_shots()
             self.save()
@@ -54,12 +51,10 @@ class StoryBoardGener:
             self.isOk = True
             return
 
-        # Step 5: 如果使用缓存直接返回
         if self.cache_mode:
             self.isOk = True
             return
 
-        # Step 6: 生成新的故事板
         if not self.get():
             logger.info("when get storyboard , but it is fail")
             return
@@ -79,6 +74,7 @@ class StoryBoardGener:
                 logger.exception(e)
                 data = StoryData()
                 data.id = task
+                self.cache_mode = False
                 self.refresh_shot = False
         else:
             data = StoryData()
@@ -104,7 +100,7 @@ class StoryBoardGener:
     def get_once(self):
         #DATA = StoryData()
         #DATA.ROLESINFO = getRolesInfoGlobal()
-        self.md = self.backend.stream(read_storyboard_prompt())
+        self.md = self.backend.stream(read_storyboard_prompt(self.style.base))
         self.parseToData(self.md)
         for shot in self.data.shots:
             self.refine_shot(shot)
@@ -135,7 +131,7 @@ class StoryBoardGener:
             with open(self.md_file, "w+", encoding="utf-8") as f:
                 f.write(self.md)
 
-    def refine_shot_subtitle(self,shot):
+    def refine_shot_subtitle(self,shot,try_counter = 0):
         prompt = read_refine_shot_subtitle().format(
             shot.id,
             shot.text,
@@ -161,8 +157,8 @@ class StoryBoardGener:
                 elif shot.roles_number == 1:
                     shot.desc_prompt = f"{roles[0].id}({roles[0].trans})"
                 else:
-                    shot.desc_prompt = f"{roles[0].id}({roles[0].trans}),{roles[0].spec} at left,{roles[1].id}({roles[1].trans}),{roles[0].spec} at right"
-                shot.merge_prompt = self.style(shot.desc_prompt)+roles_tail_string+shot.first_frame_prompt
+                    shot.desc_prompt = f"{roles[0].id}({roles[0].trans}),{roles[0].spec} at left,{roles[1].id}({roles[1].trans}),{roles[1].spec} at right"
+                shot.merge_prompt = self.style(shot.desc_prompt+roles_tail_string)+shot.first_frame_prompt
                 shot.image_prompt = shot.merge_prompt.style
             elif "split_text" in line:
                 scene = StoryData()
@@ -175,10 +171,17 @@ class StoryBoardGener:
             elif "video_trends_prompt" in line:
                 scene = shot.scenes[index]
                 scene.video_trends_prompt = line.split("video_trends_prompt:")[1].strip()
+                scene.roles = self.getRolesInInfo(scene.scene_text,scene.video_trends_prompt)
+                scene.roles_number = len(scene.roles)
+                roles = [self.data.roles[role] for role in scene.roles]
+                scene.video_prompt = self.style(f'{"" if scene.roles_number==0 else ",".join([f"{role.eng} is {role.spec}" for role in roles])}')+scene.video_trends_prompt
                 index+=1
 
+        if (not shot.has("subtitle") or shot.subtitle == "") and try_counter<3:
+            self.refine_shot_subtitle(shot,try_counter=try_counter+1)
+
     def prepare_scenes_data_in_one_shot(self,shot):
-        start_index = len(self.data.scenes) if self.data.scenes else 0
+        start_index = len(self.data.scenes or [])
         for scene in shot.scenes:
             scene_info = StoryData()
             scene_info.id = start_index+scene.id
@@ -186,14 +189,11 @@ class StoryBoardGener:
             scene_info.scene_id = scene.id
             scene_info.isEnd = True if scene.id == len(shot.scenes)-1 else False
             self.data.scenes.append(scene_info)
-            scene.roles = self.getRolesInInfo(scene.scene_text,scene.video_trends_prompt)
-            scene.roles_number = len(scene.roles)
-            roles = [self.data.roles[role] for role in scene.roles]
-            scene.video_prompt = self.style(f'{"" if scene.roles_number==0 else ",".join([f"{role.eng} is {role.spec}" for role in roles])}')+scene.video_trends_prompt
 
     def refine_shot(self,shot):
         self.refine_shot_subtitle(shot)
-        self.prepare_scenes_data_in_one_shot(shot)
+        if not self.refresh_shot:
+            self.prepare_scenes_data_in_one_shot(shot)
         shot.info()
 
     def parseToData(self,text):

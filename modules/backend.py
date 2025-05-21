@@ -117,7 +117,7 @@ class VideoBackend(Backend):
 
 class ChatBackend(Backend):
     required_methods = ['stream',"close"]
-    required_attributes = ['isOpened']
+    required_attributes = ['isOpened',"model"]
 
 class FrameProcessPlugin(Backend):
     required_methods = [['rend',("frame",Frame)],['__init__',("processor",AfterEffectProcessor)]]

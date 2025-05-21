@@ -46,3 +46,6 @@ if __name__ == "__main__":
     p = Pro3DModel("a warrior")
     print("styleFrontView:", p.styleFrontView)
     print("style:", p.style)
+    p = Style("a warrior")
+    print("styleFrontView:", p.styleFrontView)
+    print("style:", p.style)

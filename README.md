@@ -2,9 +2,17 @@
 
 **EasyStory** is a toolchain for automatically generating story content. It supports storyboard generation from text descriptions, character creation, voice-over, video synthesis, and more. It is suitable for animation production, video content creation, and AI script generation. It allows flexible backend configuration, style definition, and content update control.
 
+🎬 One-click story + scene generation
+
+🧠 Keeps character settings consistent across scenes
+
+🎭 Supports multi-character, multi-shot scripting – all powered by local LLMs
+
 ------
 
 ## 🔧 Automatic Installation
+
+16G VRAM Need
 
 Click **install.bat**
 
@@ -32,7 +40,7 @@ You can also configure tasks in `run_setting.txt` before running.
 All style keywords **must be in English**:
 
 ```
-makefile复制编辑base:professional 3d model  
+base:professional 3d model  
 pixar:pixar animation  
 dream:dreamWorks  
 ```
@@ -40,7 +48,7 @@ dream:dreamWorks
 You can customize them like this:
 
 ```
-makefile复制编辑base:Ink Wash Painting  
+base:Ink Wash Painting  
 qibaishi:Qi Baishi  
 ```
 
@@ -71,6 +79,7 @@ EasyStory
     ├── storydata.py        # A data class for intuitive member access, JSON and dict serialization
     ├── StoryTask.py        # Task process and cache management
 ├── outputs/                # Story project files, character files, and final output
+├── scripts/                # custom backends and plugins,run script.already in the python search path.
 ├── logs/                   # Logs
 ├── env.bat                 # Launch environment
 ├── install.bat             # Quick installation
@@ -92,8 +101,6 @@ import cv2
 from environments import *
 
 def convert_to_grayscale(img):
-    if img is None:
-        raise FileNotFoundError(f"Cannot load image: {input_path}")
     gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     return gray_img
 
@@ -126,7 +133,8 @@ plugin_list = [FrameProcessPlugin(myCustomPlugin), FrameProcessPlugin(subtitle)]
 
 #Andvance
 # Optional configurations for engine
-LANG = JP  # From environments.py
+LANG = "JP"  # From environments.py
+ACTION = "make a video about cat"
 OllamaEngine.model = "deepseek-v3"  # Specify model instead of using default
 voice = "TangGuoqiang"  # Voice name from libs/voices
 Subtitle.subtitle_color = (255, 235, 255)  # Customize subtitle color
@@ -144,5 +152,4 @@ task = StoryTask(None, config)
 
 ## 📜 Open Source License
 
-We recommend using the MIT License for this project.
- You may also choose other licenses according to your needs, such as Apache-2.0 or GPL-3.0.
+MIT License for this project.

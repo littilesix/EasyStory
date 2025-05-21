@@ -15,9 +15,8 @@ from diffusers.utils import (
 from diffusers.pipelines.flux.pipeline_output import FluxPipelineOutput
 from diffusers import FluxPipeline,FluxTransformer2DModel,AutoencoderKL,FlowMatchEulerDiscreteScheduler,FluxImg2ImgPipeline
 from diffusers.image_processor import PipelineImageInput
-from transformers import  CLIPTextModel,T5EncoderModel,CLIPTokenizer,T5TokenizerFast,CLIPTextConfig
 from diffusers_helper.memory import cpu, gpu, get_cuda_free_memory_gb, move_model_to_device_with_memory_preservation, offload_model_from_device_for_memory_preservation, fake_diffusers_current_device, DynamicSwapInstaller, unload_complete_models, load_model_as_complete
-
+from transformers import  CLIPTextModel,T5EncoderModel,CLIPTokenizer,T5TokenizerFast,CLIPTextConfig
 from transformers.models.t5 import T5Config
 from safetensors.torch import load_file
 from diffusers.utils import load_image
@@ -39,15 +38,15 @@ class PipelineMode(Enum):
     ImageToImage = 0
     TextToImage = 1
 
-class FluxEngine():
-
-    def __init__(self):
-        self.dtype = torch.bfloat16
-
-        self.scheduler = FlowMatchEulerDiscreteScheduler.from_pretrained('./models/flux/scheduler',torch_dtype=self.dtype, cache_dir="./.cache")
+class FluxEngine:
+    def __init__(self,
+        transformer="./models/flux/flux1-dev.safetensors",
+        dtype=torch.bfloat16,
+        ):
+        self.dtype = dtype
+        self.scheduler = FlowMatchEulerDiscreteScheduler.from_pretrained('./models/flux/scheduler',torch_dtype=self.dtype)
 
         self.vae = AutoencoderKL.from_pretrained('./models/flux/vae', torch_dtype=self.dtype)
-        #vae.cpu()
         self.vae.enable_slicing()
         self.vae.enable_tiling()
         self.vae.requires_grad_(False)
@@ -74,7 +73,7 @@ class FluxEngine():
         self.tokenizer_2 = T5TokenizerFast.from_pretrained('.\\models\\flux\\tokenizer_2', torch_dtype=self.dtype)
 
         self.transformer = FluxTransformer2DModel.from_single_file(
-            ".\\models\\flux\\flux1-dev.safetensors",
+            transformer,
             config = ".\\models\\flux",
             torch_dtype=self.dtype
             )
@@ -87,7 +86,6 @@ class FluxEngine():
         self.pipeline = None
         self.lora = None
         self.mode = None
-
 
     def __initImageToImagePipeline(self):
         self.vae.to(gpu)
@@ -102,6 +100,9 @@ class FluxEngine():
             tokenizer_2 = self.tokenizer_2,
             transformer = self.transformer
         )
+
+    def _initTxtToImagePipeline(self):
+        self.__initTxtToImagePipeline()
 
     def __initTxtToImagePipeline(self):
         self.vae.cpu()
@@ -137,7 +138,7 @@ class FluxEngine():
         num_inference_steps: int = 28,
         strength = 0.8
         ):
-        if self.mode == PipelineMode.ImageToImage or self.pipeline == None:
+        if self.mode != PipelineMode.TextToImage or self.pipeline == None:
             self.__initTxtToImagePipeline()
         if self.lora:
             self.pipeline.load_lora_weights(self.lora)
@@ -159,7 +160,7 @@ class FluxEngine():
         image = None,
         strength = 0.6
         ):
-        if self.mode == PipelineMode.TextToImage or self.pipeline == None:
+        if self.mode != PipelineMode.ImageToImage or self.pipeline == None:
             self.__initImageToImagePipeline()
         if self.lora:
             self.pipeline.load_lora_weights(self.lora)
@@ -733,10 +734,10 @@ class FluxEngine():
 if __name__ == '__main__':
     #from utils import testImageGen
     flux = FluxEngine()
-    flux.load_lora('outputs/roles/Doudou/lora.safetensors')
-    image = flux.getImageFromText(prompt="A cute rabbit that can talk, a bit shy but very friendly,short,fat",width=600,height=800)
+    #flux.load_lora('outputs/roles/Doudou/lora.safetensors')
+    image = flux.run(prompt="A cute rabbit that can talk, a bit shy but very friendly,short,fat",width=600,height=800,ip_adapter_image ="")
     image.save(f"text.png")
-    flux.unload_lora()
-    image = flux.getImageFromImage(image =image,prompt="A cute rabbit that can talk, a bit shy but very friendly,short,fat",width=600,height=800)
-    image.save(f"image_to_image.png")
+    #flux.unload_lora()
+    #image = flux.getImageFromImage(image =image,prompt="A cute rabbit that can talk, a bit shy but very friendly,short,fat",width=600,height=800)
+    #image.save(f"image_to_image.png")
 

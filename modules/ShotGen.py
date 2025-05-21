@@ -171,7 +171,7 @@ class ShotGener:
             self.imgBackend.unload_lora()
             mergeImage = self.merge_images(img1, img2)
             mergeImage.save(f"{self.data.cache_dir}/merge_{shot.id}.png")
-            image = self.imgBackend.getImageFromImage(image=mergeImage,prompt=shot.merge_prompt,width=self.width,height=self.height)
+            image = self.imgBackend.getImageFromImage(image=mergeImage,prompt=shot.image_prompt,width=self.width,height=self.height)
         image.save(path)
         return path
 

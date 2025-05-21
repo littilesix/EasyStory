@@ -9,13 +9,25 @@ from StoryboardGen import StoryBoardGener
 from ShotGen import ShotGener
 from after_effect import *
 import logging
-from style import Style
-os.makedirs("outputs/roles",exist_ok=True)
+from style import Style,Pro3DModel
+import pkgutil
+import importlib
+import inspect
+
 setup_logging()
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 #sys.stdout = StreamToLogger(logger, logging.INFO)
 #sys.stderr = StreamToLogger(logger, logging.ERROR)
+os.makedirs("outputs/roles",exist_ok=True)
+
+
+def import_custom_class(path):
+    for loader, module_name, is_pkg in pkgutil.iter_modules([path]):
+        module = importlib.import_module(f"{module_name}")
+        for name, obj in inspect.getmembers(module, inspect.isclass):
+            globals()[name] = obj
 
 def extract_custom_style(lines: list[str]) -> type[Style] | None:
     """
@@ -62,12 +74,6 @@ class RenewConfig(StoryData):
         else:
             raise AttributeError(f"valid key is {valid_list},not include {k}")
 
-class DefaultStyle(Style):
-    base = "professional 3d model"
-    render = "octane render,highly detailed,volumetric,dramatic lighting"
-    pixar = "pixar animation"
-    dream = "dreamWorks"
-
 class StoryTaskConfig:
     def __init__(
         self,
@@ -79,7 +85,7 @@ class StoryTaskConfig:
         video_height:int = 800,
         plugin_list:list = None,
         voice:str = "default",
-        style:type = DefaultStyle,
+        style:type = Pro3DModel,
         renew:RenewConfig = None
         ):
 
@@ -114,9 +120,6 @@ class StoryTask:
             config = StoryTaskConfig()
 
         redo_list = self.cache_process(task,config.renew) if task else []
-
-        if redo_list:
-            config.renew.shots = True
 
         logger.info(f"{task+' ' if task else ''}runing StoryboardGener")
         
@@ -176,6 +179,7 @@ class StoryTask:
             if renew.shots:
                 logger.info("process shot refine regenerate")
                 renew.audios = True
+                renew.images = True
             if renew.audios:
                 logger.info("process audio file delete ing...")
                 StoryTask.remove_cache(cache_dir,end = ".wav")
@@ -204,10 +208,15 @@ class StoryTask:
 
     @classmethod
     def fromText(cls,path="run_setting.txt"):
+
+        already_import_custom = False
+
         if not os.path.exists(path):
             raise FileNotFoundError("missing run_setting.txt")
+
         with open(path, "r", encoding="utf-8") as f:
             setting = f.read()
+
         lines = [line for line in setting.splitlines() if not line.strip().startswith("#")]
 
         setting = "\n".join(lines)
@@ -217,7 +226,7 @@ class StoryTask:
         if CustomStyle:
             style = CustomStyle
         else:
-            style = DefaultStyle
+            style = Pro3DModel
         
         print("\n=== Custom Style ===")
         print(CustomStyle.__name__)
@@ -271,6 +280,10 @@ class StoryTask:
         audio_backend_str = extract_setting("AudioBackend", "FishSpeechEngine")
         after_effect_str = extract_setting("AffterEffectPlugs", "")
 
+        if chat_backend_str != "OllamaEngine" or image_backend_str != "FluxEngine" or audio_backend_str != "FishSpeechEngine" or video_backend_str != "FramePackEngine":
+            import_custom_class("scripts")
+            already_import_custom = True
+
         chat_backend = ChatBackend(eval(chat_backend_str))
         image_backend = ImageBackend(eval(image_backend_str))
         video_backend = VideoBackend(eval(video_backend_str))
@@ -278,8 +291,12 @@ class StoryTask:
 
         plugin_list = []
         plugin_names =[]
+
         for class_name in [p.strip() for p in after_effect_str.split(",") if p.strip()]:
             try:
+                if not already_import_custom and class_name not in ["Subtitle","VideoScaler"]:
+                    import_custom_class("scripts")
+                    already_import_custom = True
                 plugin_class = eval(class_name)
                 plugin_backend = FrameProcessPlugin(plugin_class)
                 plugin_list.append(plugin_backend)
@@ -306,6 +323,7 @@ class StoryTask:
         )
 
         task = extract_setting("task", None)
+        
         print(f"\n=== task ===\ntask: {task}")
 
         print(f"\n=== all setting readed ===")
