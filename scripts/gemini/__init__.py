@@ -29,6 +29,8 @@ class GeminiEngine:
             GeminiEngine.key = read_text(f"{current_dir}/api.key").strip()
         if os.path.exists(f"{current_dir}/api.proxy"):
             GeminiEngine.proxy = read_text(f"{current_dir}/api.proxy").strip()
+        if GeminiEngine.key is None:
+            logger.info("gemini client need a key")
         try:
             self.client = genai.Client(api_key=GeminiEngine.key)
             if GeminiEngine.proxy:
